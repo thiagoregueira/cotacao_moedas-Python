@@ -1,0 +1,76 @@
+h2 {
+    color: black;
+}
+
+.st-emotion-cache-1dumvfu {
+    font-family: "Source Sans Pro", sans-serif;
+    margin-bottom: -1rem;
+    text-align: center;
+    color: black;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.card {
+    background-color: rgb(71, 150, 170);
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 4px 4px 8px 4px rgba(0, 0, 0, 0.4);
+}
+
+.st-emotion-cache-8542t9 {
+    background-color: #002b36;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 4px 4px 8px 4px rgba(0, 0, 0, 0.4);
+}
+
+
+.st-emotion-cache-ocqkz7 {
+    background-color: #002b36;
+    text-align: center;
+}
+
+.st-emotion-cache-8ijwm3 {
+    background-color: #002b36;
+    margin-left: 20px;
+    margin-right: 20px;
+}
+
+.st-emotion-cache-1kyxreq {
+    margin-left: 100px;
+}
+
+.st-emotion-cache-1b4uc9h {
+    margin-right: 100px;
+}
+
+
+.stButton {
+    background-color: #002b36;
+    color: white;
+    border: none;
+    padding-bottom: 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+.st-emotion-cache-k7vsyb {
+    text-align: center;
+}
+
+.st-emotion-cache-1l0ei5a {
+    background-color: #002b36;
+}
+
+body {
+    background-color: #002b36;
+}
