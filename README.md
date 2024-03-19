@@ -1,6 +1,6 @@
 # Projeto de Cotação de Moedas
-Este projeto é uma aplicação web desenvolvida com Streamlit para consultar a cotação de moedas.
-Pode ser acessado através do endereço: https://cotacaomoedas.streamlit.app/
+- Este projeto é uma aplicação web desenvolvida com Streamlit para consultar a cotação de moedas.
+- Pode ser acessado através do endereço: https://cotacaomoedas.streamlit.app/
 
 ## Estrutura do Projeto
 ~~~
