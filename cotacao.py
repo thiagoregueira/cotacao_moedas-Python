@@ -120,7 +120,7 @@ index = 0
 
 
 for currency, details in consulta_api().items():
-    with st.container(border=True):
+    with st.container():
         with columns[index]:
 
             col1, col2 = st.columns([0.5, 2])
