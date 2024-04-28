@@ -122,7 +122,6 @@ index = 0
 for currency, details in consulta_api().items():
     with st.container():
         with columns[index]:
-
             col1, col2 = st.columns([0.5, 2])
             col1.image(bandeiras[currency[:3]], width=50)
             col2.image(bandeiras[currency[3:]], width=50)
@@ -179,4 +178,4 @@ for currency, details in consulta_api().items():
 
                     components.html(html_string, height=300, width=500, scrolling=True)
 
-        index = (index + 1) % 5
+    index = (index + 1) % 5
