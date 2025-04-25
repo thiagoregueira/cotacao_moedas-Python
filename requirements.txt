@@ -52,10 +52,9 @@ rpds-py
 six
 smmap
 stack-data
-streamlit
+streamlit>=1.30.0
 streamlit-card
 streamlit-modal
-
 tenacity
 toml
 toolz
