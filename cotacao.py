@@ -35,14 +35,15 @@ def consulta_api():
         "THB-BRL",
         "TRY-BRL",
         "TWD-BRL",
-        "VEF-BRL",
         "ZAR-BRL",
     ]
     moedas = ",".join(moedas)
     url = url + moedas
     response = requests.get(url)
-    moedas = json.loads(response.text)
-    return moedas
+    if response.status_code == 200:
+        moedas = json.loads(response.text)
+        return moedas
+    return {}
 
 
 bandeiras = {
@@ -73,7 +74,6 @@ bandeiras = {
     "THB": "https://www.crwflags.com/fotw/images/t/th.gif",
     "TRY": "https://www.crwflags.com/fotw/images/t/tr.gif",
     "TWD": "https://www.crwflags.com/fotw/images/t/tw.gif",
-    "VEF": "https://www.crwflags.com/fotw/images/v/ve.gif",
     "ZAR": "https://www.crwflags.com/fotw/images/z/za.gif",
 }
 
