@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import time
 from streamlit_modal import Modal
 import datetime
 import streamlit.components.v1 as components
@@ -41,22 +42,42 @@ def consulta_api():
     moedas = ','.join(moedas)
     url = url + moedas
 
-    try:
-        response = requests.get(url)
-        if response.status_code != 200:
-            st.error(f'Erro ao conectar com a API: Status {response.status_code}')
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, headers=headers, timeout=15)
+
+            if response.status_code == 200:
+                data = response.json()
+                if 'status' in data or ('code' in data and 'message' in data and len(data) <= 2):
+                    st.error(f'A API retornou um erro: {data}')
+                    return {}
+                return data
+
+            elif response.status_code == 429:
+                if attempt < max_retries - 1:
+                    time.sleep(2**attempt)  # Backoff exponencial
+                    continue
+                else:
+                    st.error(
+                        'Erro 429: Muitas requisições. O servidor da API bloqueou temporariamente o acesso devido ao alto tráfego (comum em ambientes compartilhados como Streamlit Cloud). Tente novamente mais tarde.'
+                    )
+                    return {}
+            else:
+                st.error(f'Erro ao conectar com a API: Status {response.status_code}')
+                return {}
+
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(1)
+                continue
+            st.error(f'Erro inesperado: {e}')
             return {}
-
-        data = response.json()
-
-        if 'status' in data or ('code' in data and 'message' in data and len(data) <= 2):
-            st.error(f'A API retornou um erro: {data}')
-            return {}
-
-        return data
-    except Exception as e:
-        st.error(f'Erro inesperado: {e}')
-        return {}
+    return {}
 
 
 bandeiras = {
@@ -135,74 +156,78 @@ index = 0
 # Imagem placeholder para bandeiras não encontradas
 PLACEHOLDER_IMG = 'https://raw.githubusercontent.com/stevenrskelton/flag-icon/master/png/75/country-404.png'
 
-for currency, details in consulta_api().items():
-    if not isinstance(details, dict):
-        continue
+data = consulta_api()
+if not data:
+    st.warning('Não foi possível carregar as cotações no momento. Tente recarregar a página em alguns instantes.')
+else:
+    for currency, details in data.items():
+        if not isinstance(details, dict):
+            continue
 
-    with columns[index]:
-        col1, col2 = st.columns([0.5, 2])
+        with columns[index]:
+            col1, col2 = st.columns([0.5, 2])
 
-        # Uso defensivo do dicionário de bandeiras
-        bandeira_origem = bandeiras.get(currency[:3], PLACEHOLDER_IMG)
-        # Para a segunda moeda, assume-se que seja os caracteres a partir do 3o,
-        # mas cuidado com moedas de 4 letras como BRLT.
-        # Se currency for USDBRLT (7 chars), currency[3:] é BRLT.
-        bandeira_destino = bandeiras.get(currency[3:], PLACEHOLDER_IMG)
+            # Uso defensivo do dicionário de bandeiras
+            bandeira_origem = bandeiras.get(currency[:3], PLACEHOLDER_IMG)
+            # Para a segunda moeda, assume-se que seja os caracteres a partir do 3o,
+            # mas cuidado com moedas de 4 letras como BRLT.
+            # Se currency for USDBRLT (7 chars), currency[3:] é BRLT.
+            bandeira_destino = bandeiras.get(currency[3:], PLACEHOLDER_IMG)
 
-        col1.image(bandeira_origem, width=50)
-        col2.image(bandeira_destino, width=50)
+            col1.image(bandeira_origem, width=50)
+            col2.image(bandeira_destino, width=50)
 
-        st.markdown(
-            f"""
-                            <div class="card">
-                                <h5 class="card-title" style="text-align: center;">{currency[:3]} - {currency[3:]}</h5>
-                                <span class="badge bg-primary" style="text-align: center;">{details.get('name', 'N/A')}</span>
-                                <p style="text-align: center;"><strong>Preço de Compra:</strong> R$ {float(details.get('bid', 0)):.2f}</p>
-                                <p style="text-align: center;"><strong>Preço de Venda:</strong> R$ {float(details.get('ask', 0)):.2f}</p>
+            st.markdown(
+                f"""
+                                <div class="card">
+                                    <h5 class="card-title" style="text-align: center;">{currency[:3]} - {currency[3:]}</h5>
+                                    <span class="badge bg-primary" style="text-align: center;">{details.get('name', 'N/A')}</span>
+                                    <p style="text-align: center;"><strong>Preço de Compra:</strong> R$ {float(details.get('bid', 0)):.2f}</p>
+                                    <p style="text-align: center;"><strong>Preço de Venda:</strong> R$ {float(details.get('ask', 0)):.2f}</p>
+                                </div>
+                            """,
+                unsafe_allow_html=True,
+            )
+
+            open_modal = st.button('Detalhes', key=f'button-{currency}')
+            modal = Modal(
+                title='Detalhes do par de moedas',
+                key=f'modal-{currency}',
+                padding=0,
+                max_width=600,
+            )
+
+            if open_modal:
+                modal.open()
+
+            if modal.is_open():
+                with modal.container():
+                    st.write(
+                        f"""<h1 class="badge bg-primary" style="text-align: center;"><strong>{details.get('name', 'N/A')}</strong></h1>""",
+                        unsafe_allow_html=True,
+                    )
+                    try:
+                        create_date = datetime.datetime.strptime(details.get('create_date', ''), '%Y-%m-%d %H:%M:%S')
+                        formatted_date = create_date.strftime('%d/%m/%Y - %H:%M:%S')
+                    except:  # noqa: E722
+                        formatted_date = 'Data indisponível'
+
+                    html_string = f"""
+                            <div class="card-modal" id="modal">
+                                <div class="card-header">
+                                </div>
+                                <div class="card-body">
+                                    <p style="text-align: center;"><strong>Preço Máximo:</strong> R$ {float(details.get('high', 0)):.2f}</p>
+                                    <p style="text-align: center;"><strong>Preço Mínimo:</strong> R$ {float(details.get('low', 0)):.2f}</p>
+                                    <p style="text-align: center;"><strong>Variação:</strong> R$ {float(details.get('varBid', 0)):.2f}</p>
+                                    <p style="text-align: center;"><strong>Porcentagem de Variação:</strong> {float(details.get('pctChange', 0)):.2f}%</p>
+                                    <p style="text-align: center;"><strong>Preço de Compra:</strong> R$ {float(details.get('bid', 0)):.2f}</p>
+                                    <p style="text-align: center;"><strong>Preço de Venda:</strong> R$ {float(details.get('ask', 0)):.2f}</p>
+                                    <p style="text-align: center;"><strong>Última atualização:</strong> {formatted_date}</p>
+                                </div>
                             </div>
-                        """,
-            unsafe_allow_html=True,
-        )
+                        """
 
-        open_modal = st.button('Detalhes', key=f'button-{currency}')
-        modal = Modal(
-            title='Detalhes do par de moedas',
-            key=f'modal-{currency}',
-            padding=0,
-            max_width=600,
-        )
+                    components.html(html_string, height=300, width=500, scrolling=True)
 
-        if open_modal:
-            modal.open()
-
-        if modal.is_open():
-            with modal.container():
-                st.write(
-                    f"""<h1 class="badge bg-primary" style="text-align: center;"><strong>{details.get('name', 'N/A')}</strong></h1>""",
-                    unsafe_allow_html=True,
-                )
-                try:
-                    create_date = datetime.datetime.strptime(details.get('create_date', ''), '%Y-%m-%d %H:%M:%S')
-                    formatted_date = create_date.strftime('%d/%m/%Y - %H:%M:%S')
-                except:  # noqa: E722
-                    formatted_date = 'Data indisponível'
-
-                html_string = f"""
-                        <div class="card-modal" id="modal">
-                            <div class="card-header">
-                            </div>
-                            <div class="card-body">
-                                <p style="text-align: center;"><strong>Preço Máximo:</strong> R$ {float(details.get('high', 0)):.2f}</p>
-                                <p style="text-align: center;"><strong>Preço Mínimo:</strong> R$ {float(details.get('low', 0)):.2f}</p>
-                                <p style="text-align: center;"><strong>Variação:</strong> R$ {float(details.get('varBid', 0)):.2f}</p>
-                                <p style="text-align: center;"><strong>Porcentagem de Variação:</strong> {float(details.get('pctChange', 0)):.2f}%</p>
-                                <p style="text-align: center;"><strong>Preço de Compra:</strong> R$ {float(details.get('bid', 0)):.2f}</p>
-                                <p style="text-align: center;"><strong>Preço de Venda:</strong> R$ {float(details.get('ask', 0)):.2f}</p>
-                                <p style="text-align: center;"><strong>Última atualização:</strong> {formatted_date}</p>
-                            </div>
-                        </div>
-                    """
-
-                components.html(html_string, height=300, width=500, scrolling=True)
-
-    index = (index + 1) % 5
+        index = (index + 1) % 5
