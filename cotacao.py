@@ -8,6 +8,15 @@ import streamlit.components.v1 as components
 
 @st.cache_data(ttl=1800)
 def consulta_api():
+    # Tenta obter a chave de API dos secrets do Streamlit
+    try:
+        API_KEY = st.secrets['AWESOME_API_KEY']
+    except (FileNotFoundError, KeyError):
+        st.error(
+            "Chave de API não configurada. Configure a secret 'AWESOME_API_KEY' no arquivo .streamlit/secrets.toml ou no painel do Streamlit Cloud."
+        )
+        return {}
+
     url = 'https://economia.awesomeapi.com.br/last/'
     moedas = [
         'USD-BRL',
@@ -40,7 +49,8 @@ def consulta_api():
         'ZAR-BRL',
     ]
     moedas = ','.join(moedas)
-    url = url + moedas
+    # Adiciona o token na URL conforme documentação da AwesomeAPI
+    url = f'{url}{moedas}?token={API_KEY}'
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -64,7 +74,7 @@ def consulta_api():
                     continue
                 else:
                     st.error(
-                        'Erro 429: Muitas requisições. O servidor da API bloqueou temporariamente o acesso devido ao alto tráfego (comum em ambientes compartilhados como Streamlit Cloud). Tente novamente mais tarde.'
+                        'Erro 429: Muitas requisições. Mesmo com a chave de API, o limite foi atingido. Tente novamente mais tarde.'
                     )
                     return {}
             else:
@@ -209,7 +219,7 @@ else:
                     try:
                         create_date = datetime.datetime.strptime(details.get('create_date', ''), '%Y-%m-%d %H:%M:%S')
                         formatted_date = create_date.strftime('%d/%m/%Y - %H:%M:%S')
-                    except:  # noqa: E722
+                    except:
                         formatted_date = 'Data indisponível'
 
                     html_string = f"""
